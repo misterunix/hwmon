@@ -13,14 +13,20 @@ import (
 /* main struct holding the hwmon names,vales and paths */
 type HwMon struct {
 	// map[path]map[name]value
-	Values map[string]map[string]string
+	Values map[string]map[string]Sensors
 	//BaseNames map[string]string // map of paths to names
 	BasePath string
 }
 
+type Sensors struct {
+	Head  string
+	Tail  string
+	Value string
+}
+
 func (h *HwMon) Init(path string) error {
 
-	h.Values = make(map[string]map[string]string, 0)
+	h.Values = make(map[string]map[string]Sensors, 0)
 
 	h.BasePath = path
 	files, err := os.ReadDir(path)
@@ -34,7 +40,7 @@ func (h *HwMon) Init(path string) error {
 
 	for _, file := range files {
 		tpath := path + "/" + file.Name()
-		h.Values[tpath] = map[string]string{}
+		h.Values[tpath] = map[string]Sensors{}
 	}
 
 	return nil
@@ -55,7 +61,13 @@ func (h *HwMon) GetValues() error {
 					tv = "error"
 					continue
 				}
-				h.Values[d][newf.Name()] = tv
+				split := strings.Split(newf.Name(), "_")
+				y := Sensors{
+					Head:  split[0],
+					Tail:  split[1],
+					Value: tv,
+				}
+				h.Values[d][newf.Name()] = y
 			}
 
 		}
