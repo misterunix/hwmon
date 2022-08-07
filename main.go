@@ -10,68 +10,81 @@ import (
 //var Hwmon map[string]map[string]string
 //var HwmonName map[string]string
 
-/* main struct holding the hwmon names,vales and paths */
-type HwMon struct {
-	// map[path]map[name]value
-	Values map[string]map[string]Sensors
-	//BaseNames map[string]string // map of paths to names
-	BasePath string
-}
-
 type Sensors struct {
+	Path  string
 	Head  string
 	Tail  string
 	Value string
 }
 
+/* main struct holding the hwmon names,vales and paths */
+type HwMon struct {
+	BasePath string
+	Sensor   []Sensors
+}
+
 func (h *HwMon) Init(path string) error {
 
-	h.Values = make(map[string]map[string]Sensors, 0)
-
-	h.BasePath = path
-	files, err := os.ReadDir(path)
+	// Get the list of hwmon directories
+	basedirs, err := GetDirEntries(path)
 	if err != nil {
 		return err
 	}
 
-	if len(files) == 0 {
-		return errors.New("no hwmon devices found")
-	}
+	// Loop through the directories
+	for _, d := range basedirs {
+		// Get the list of files in the directory
+		tmpfilelist, err := GetDirEntries(d)
+		if err != nil {
+			return err
+		}
 
-	for _, file := range files {
-		tpath := path + "/" + file.Name()
-		h.Values[tpath] = map[string]Sensors{}
+		// Loop through the files
+		for _, f := range tmpfilelist {
+
+			// Get the file name
+			if !strings.Contains(f, "_") {
+				continue
+			}
+
+			split := strings.Split(f, "_")
+			y := Sensors{
+				Head: split[0],
+				Tail: split[1],
+			}
+			fmt.Println(d, y)
+			h.Values[d][y] = "0"
+
+		}
+
 	}
 
 	return nil
 }
 
+func GetDirEntries(path string) ([]string, error) {
+
+	var filelist []string
+
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		filelist = append(filelist, path+"/"+f.Name())
+	}
+
+	if len(filelist) == 0 {
+		return nil, errors.New("no files found")
+	}
+
+	return filelist, nil
+
+}
+
 func (h *HwMon) GetValues() error {
 
-	for d := range h.Values {
-		tmpd, err := os.ReadDir(d)
-		if err != nil {
-			return err
-		}
-		for _, newf := range tmpd {
-			if strings.Contains(newf.Name(), "_") {
-				tfpath := d + "/" + newf.Name()
-				tv, err := quickRead(tfpath)
-				if err != nil {
-					tv = "error"
-					continue
-				}
-				split := strings.Split(newf.Name(), "_")
-				y := Sensors{
-					Head:  split[0],
-					Tail:  split[1],
-					Value: tv,
-				}
-				h.Values[d][newf.Name()] = y
-			}
-
-		}
-	}
 	return nil
 }
 
@@ -87,6 +100,8 @@ func quickRead(path string) (string, error) {
 }
 
 func main() {
+
+	os.Exit(0)
 
 	var h HwMon
 	err := h.Init("/sys/class/hwmon")
