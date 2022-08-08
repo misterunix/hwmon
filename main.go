@@ -48,8 +48,16 @@ func Init(path string) error {
 			}
 
 			//get name of sensor
-			split := strings.Split(y, "_")
-			name = split[0]
+			y1 := strings.TrimPrefix(y, basedir+"/")
+			split := strings.Split(y1, "_")
+			if len(split) > 2 {
+				split[1] += "_" + split[2]
+			}
+			name, err = quickRead(basedir + "/name")
+			if err != nil {
+				continue
+			}
+			head = split[0]
 			tail = split[1]
 			//value = quickRead()
 			z := Sensor{
@@ -65,6 +73,16 @@ func Init(path string) error {
 	}
 
 	return nil
+}
+
+func GetValues() {
+	for i, s := range Sensors {
+		v, err := quickRead(s.Path + "/" + s.Head + "_" + s.Tail)
+		Sensors[i].Value = v
+		if err != nil {
+			continue
+		}
+	}
 }
 
 func GetDirEntries(path string) ([]string, error) {
@@ -107,6 +125,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(Sensors)
+	GetValues()
+
+	for _, s := range Sensors {
+		fmt.Printf("Path:%s Name:%s Head:%s Tail:%s Value:%s\n", s.Path, s.Name, s.Head, s.Tail, s.Value)
+	}
 
 }
