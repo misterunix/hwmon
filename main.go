@@ -7,23 +7,17 @@ import (
 	"strings"
 )
 
-//var Hwmon map[string]map[string]string
-//var HwmonName map[string]string
-
-type Sensors struct {
-	Path  string
+type Sensor struct {
 	Head  string
 	Tail  string
 	Value string
+	Name  string
+	Path  string
 }
 
-/* main struct holding the hwmon names,vales and paths */
-type HwMon struct {
-	BasePath string
-	Sensor   []Sensors
-}
+var Sensors []Sensor
 
-func (h *HwMon) Init(path string) error {
+func Init(path string) error {
 
 	// Get the list of hwmon directories
 	basedirs, err := GetDirEntries(path)
@@ -31,32 +25,43 @@ func (h *HwMon) Init(path string) error {
 		return err
 	}
 
-	// Loop through the directories
-	for _, d := range basedirs {
-		// Get the list of files in the directory
-		tmpfilelist, err := GetDirEntries(d)
+	// Loop through the hwmon directories
+	for _, basedir := range basedirs {
+		var name string
+		var head string
+		var tail string
+		var value string
+		//get files in hwmon directory
+		files, err := GetDirEntries(basedir)
 		if err != nil {
-			return err
+			continue
 		}
 
-		// Loop through the files
-		for _, f := range tmpfilelist {
+		if len(files) == 0 {
+			continue
+		}
 
-			// Get the file name
-			if !strings.Contains(f, "_") {
+		//loop through files in hwmon directory
+		for _, y := range files {
+			if !strings.Contains(y, "_") {
 				continue
 			}
 
-			split := strings.Split(f, "_")
-			y := Sensors{
-				Head: split[0],
-				Tail: split[1],
+			//get name of sensor
+			split := strings.Split(y, "_")
+			name = split[0]
+			tail = split[1]
+			//value = quickRead()
+			z := Sensor{
+				Head:  head,
+				Tail:  tail,
+				Value: value,
+				Name:  name,
+				Path:  basedir,
 			}
-			fmt.Println(d, y)
-			h.Values[d][y] = "0"
+			Sensors = append(Sensors, z)
 
 		}
-
 	}
 
 	return nil
@@ -83,11 +88,6 @@ func GetDirEntries(path string) ([]string, error) {
 
 }
 
-func (h *HwMon) GetValues() error {
-
-	return nil
-}
-
 func quickRead(path string) (string, error) {
 	tmpB, err := os.ReadFile(path)
 	if err != nil {
@@ -101,28 +101,12 @@ func quickRead(path string) (string, error) {
 
 func main() {
 
-	os.Exit(0)
-
-	var h HwMon
-	err := h.Init("/sys/class/hwmon")
+	err := Init("/sys/class/hwmon")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = h.GetValues()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	for p, a := range h.Values {
-		for k, v := range a {
-			fmt.Printf("%s %s %s\n", p, k, v)
-		}
-
-	}
-
-	//fmt.Println(h)
+	fmt.Println(Sensors)
 
 }
