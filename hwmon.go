@@ -1,8 +1,7 @@
-package main
+package hwmon
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 )
@@ -115,20 +114,4 @@ func quickRead(path string) (string, error) {
 	tmpS = tmpS[:len(tmpS)-1]
 	tmpS = strings.TrimSpace(tmpS)
 	return tmpS, nil
-}
-
-func main() {
-
-	err := Init("/sys/class/hwmon")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	GetValues()
-
-	for _, s := range Sensors {
-		fmt.Printf("Path:%s Name:%s Head:%s Tail:%s Value:%s\n", s.Path, s.Name, s.Head, s.Tail, s.Value)
-	}
-
 }
